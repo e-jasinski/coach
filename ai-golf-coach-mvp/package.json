@@ -8,7 +8,8 @@
     "dev": "nodemon server.js",
     "build": "cd frontend/ai_golf_coach && npm install && npm run build",
     "postinstall": "npm run build",
-    "heroku-postbuild": "npm run build"
+    "heroku-postbuild": "npm run build",
+    "railway-start": "npm run build && node server.js"
   },
   "keywords": [],
   "author": "",
