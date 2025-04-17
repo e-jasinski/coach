@@ -4,10 +4,10 @@
   "description": "AI Golf Coach MVP",
   "main": "server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "nodemon server/server.js",
-    "build": "cd frontend/ai_golf_coach && npm install && npm run build",
-    "postinstall": "npm run build"
+    "start": "node server.js",
+    "dev": "yarn build && nodemon server.js",
+    "build": "cd frontend/ai_golf_coach && yarn install && yarn build",
+    "postinstall": "yarn build"
   },
   "keywords": [],
   "author": "",

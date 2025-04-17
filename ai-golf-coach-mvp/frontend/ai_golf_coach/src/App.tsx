@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthProvider from './AuthContext';
 import PrivateRoute from './PrivateRoute';
 import Login from './pages/login';
@@ -20,6 +20,7 @@ export default function App() {
           <Route path="/reset" element={<Reset />} />
           <Route element={<PrivateRoute />}>
             <Route path="/" element={<Home />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/ai-coach" element={<AICoach />} />
           </Route>

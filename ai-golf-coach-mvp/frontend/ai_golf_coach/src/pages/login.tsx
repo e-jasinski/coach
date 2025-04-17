@@ -20,7 +20,7 @@ export default function Login() {
     const data = await res.json();
     if (!res.ok || !data.token) return setMsg(data.message || 'Login failed');
     login(data.token);
-    nav('/home');
+    nav('/');
   };
 
   return (

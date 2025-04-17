@@ -27,22 +27,21 @@ app.use('/api/journal', journalRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/ai-coach', aiCoachRoutes);
 
-// Serve static frontend files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname,'frontend','ai_golf_coach','dist')));
-
-  // Handle client-side routing - serve index.html for specific routes
-  const routes = ['/login', '/register', '/forgot', '/reset', '/home', '/profile', '/'];
-  routes.forEach(route => {
-    app.get(route, (req, res) => {
-      res.sendFile(path.join(__dirname, 'frontend', 'ai_golf_coach', 'dist', 'index.html'));
-    });
-  });
-}
-
 // Health check endpoint for Railway
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
+});
+
+// Serve static frontend files
+const distPath = path.join(__dirname, 'frontend', 'ai_golf_coach', 'dist');
+app.use(express.static(distPath));
+
+// Handle client-side routing - serve index.html for specific routes
+const routes = ['/login', '/register', '/forgot', '/reset', '/home', '/profile', '/'];
+routes.forEach(route => {
+  app.get(route, (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
 });
 
 // Sync database (simple approach for MVP)
