@@ -1,11 +1,15 @@
-[phases.setup]
-nixPkgs = ["nodejs", "yarn"]
+[project]
+# override autodetect; force npm
+packageManager = "npm"
 
 [phases.install]
-cmds = ["yarn install"]
+# use clean npm install
+command = "npm ci"
 
 [phases.build]
-cmds = ["yarn run build"]
+# build your React app
+command = "npm run build"
 
-[start]
-cmd = "node server.js" 
+[phases.start]
+# run your server
+command = "npm start"
