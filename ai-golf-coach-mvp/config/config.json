@@ -1,0 +1,23 @@
+{
+  "development": {
+    "username": "golfuser",
+    "password": "golfpass",
+    "database": "ai_golf_coach",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "test": {
+    "username": "golfuser",
+    "password": "golfpass",
+    "database": "ai_golf_coach_test",
+    "host": "localhost",
+    "dialect": "postgres"
+  },
+  "production": {
+    "username": "golfuser",
+    "password": "golfpass",
+    "database": "ai_golf_coach",
+    "host": "localhost",
+    "dialect": "postgres"
+  }
+} 
