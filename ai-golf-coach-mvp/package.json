@@ -4,7 +4,7 @@
   "description": "AI Golf Coach MVP",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "npm run build && node server.js",
     "dev": "nodemon server.js",
     "build": "cd frontend/ai_golf_coach && npm install && npm run build",
     "postinstall": "npm run build"
