@@ -1,8 +1,0 @@
-{
-  "devDependencies": {
-    "sequelize-cli": "^6.6.2"
-  },
-  "dependencies": {
-    "@sendgrid/mail": "^8.1.5"
-  }
-}
