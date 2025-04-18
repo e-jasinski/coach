@@ -2,6 +2,9 @@
 sourceRoot   = "ai-golf-coach-mvp"
 packageManager = "yarn"
 
+[phases.setup]
+nixPkgs = ["nodejs_20", "yarn"]
+
 [phases.install]
 command = "yarn install --frozen-lockfile"
 
