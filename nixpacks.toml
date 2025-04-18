@@ -14,9 +14,9 @@ command = "cd ai-golf-coach-mvp && yarn install --frozen-lockfile"
 # runs the build script from that folder's package.json
 command = "cd ai-golf-coach-mvp && yarn build"
 
-[phases.start]
+[start]
 # runs the start script (which should point at your server.js)
-command = "cd ai-golf-coach-mvp && yarn start"
+command = "cd ai-golf-coach-mvp && node server.js"
 
 [variables]
 NODE_ENV = "production"
