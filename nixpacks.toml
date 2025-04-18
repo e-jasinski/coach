@@ -1,15 +1,15 @@
 [project]
-sourceRoot   = "ai-golf-coach-mvp"
+sourceRoot = "ai-golf-coach-mvp"
 packageManager = "yarn"
 
 [phases.setup]
 nixPkgs = ["nodejs_20", "yarn"]
 
 [phases.install]
-command = "yarn install --frozen-lockfile"
+command = "cd ai-golf-coach-mvp && yarn install --frozen-lockfile"
 
 [phases.build]
-command = "yarn build"
+command = "cd ai-golf-coach-mvp && yarn build"
 
 [phases.start]
-command = "yarn start"
+command = "cd ai-golf-coach-mvp && yarn start"
