@@ -8,15 +8,15 @@ nixPkgs = ["nodejs_20", "yarn"]
 
 [phases.install]
 # installs dependencies inside that folder
-command = "yarn install --frozen-lockfile"
+command = "cd ai-golf-coach-mvp && yarn install --frozen-lockfile"
 
 [phases.build]
 # runs the build script from that folder's package.json
-command = "yarn build"
+command = "cd ai-golf-coach-mvp && yarn build"
 
 [phases.start]
 # runs the start script (which should point at your server.js)
-command = "yarn start"
+command = "cd ai-golf-coach-mvp && yarn start"
 
 [variables]
 NODE_ENV = "production"
