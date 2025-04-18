@@ -5,6 +5,7 @@ let sequelize;
 
 if (process.env.DATABASE_URL) {
   // Railway environment
+  console.log('Using Railway database URL');
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     dialect: 'postgres',
     dialectOptions: {
@@ -12,10 +13,12 @@ if (process.env.DATABASE_URL) {
         require: true,
         rejectUnauthorized: false
       }
-    }
+    },
+    logging: console.log
   });
 } else {
   // Local environment
+  console.log('Using local database configuration');
   const {
     DB_NAME,
     DB_USER,
@@ -27,9 +30,17 @@ if (process.env.DATABASE_URL) {
   sequelize = new Sequelize(DB_NAME, DB_USER, DB_PASSWORD, {
     host: DB_HOST,
     dialect: DB_DIALECT,
-    // Logging can be disabled:
-    // logging: false
+    logging: console.log
   });
 }
+
+// Test the database connection
+sequelize.authenticate()
+  .then(() => {
+    console.log('Database connection has been established successfully.');
+  })
+  .catch(err => {
+    console.error('Unable to connect to the database:', err);
+  });
 
 module.exports = sequelize;
