@@ -11,5 +11,5 @@ command = "cd ai-golf-coach-mvp && yarn install --frozen-lockfile"
 [phases.build]
 command = "cd ai-golf-coach-mvp && yarn build"
 
-[phases.start]
-command = "cd ai-golf-coach-mvp && yarn start"
+[start]
+command = "cd ai-golf-coach-mvp && node server.js"
