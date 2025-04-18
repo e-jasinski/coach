@@ -1,16 +1,23 @@
 [project]
 # relative path to the folder with your package.json + server.js
-sourceRoot     = "ai‑golf‑coach‑mvp"
+sourceRoot     = "ai-golf-coach-mvp"
 packageManager = "yarn"        # or "npm" if you prefer
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "yarn"]
 
 [phases.install]
 # installs dependencies inside that folder
 command = "yarn install --frozen-lockfile"
 
 [phases.build]
-# runs the build script from that folder’s package.json
+# runs the build script from that folder's package.json
 command = "yarn build"
 
 [phases.start]
 # runs the start script (which should point at your server.js)
 command = "yarn start"
+
+[variables]
+NODE_ENV = "production"
+PORT = "3000"
