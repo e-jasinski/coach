@@ -5,97 +5,173 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
 
-exports.getRecommendations = async (req, res) => {
-  try {
-    // Get user's profile
-    const profile = await Profile.findOne({
-      where: { userId: req.user.userId }
-    });
+// Helper function to select relevant profile data
+const getProfileContext = (profile, focusArea) => {
+  const base = {
+    handicap: profile.handicap,
+    goals: profile.goals,
+    playingFrequency: profile.playingFrequency,
+  };
 
+  switch (focusArea?.toLowerCase()) {
+    case 'driving':
+      return { ...base, driverMisses: profile.driverMisses, driverMissDescription: profile.driverMissDescription, driverStrengthRating: profile.driverStrengthRating, driverInfo: profile.driverInfo };
+    case 'irons':
+      return { ...base, ironMisses: profile.ironMisses, ironMissDescription: profile.ironMissDescription, ironStrengthRating: profile.ironStrengthRating, ironInfo: profile.ironInfo };
+    case 'short game':
+    case 'chipping':
+    case 'pitching':
+    case 'bunkers':
+      return { ...base, shortGameMisses: profile.shortGameMisses, shortGameDescription: profile.shortGameDescription, chippingRating: profile.chippingRating, pitchingRating: profile.pitchingRating, bunkerRating: profile.bunkerRating, wedgeInfo: profile.wedgeInfo };
+    case 'putting':
+      return { ...base, puttingMisses: profile.puttingMisses, puttingDescription: profile.puttingDescription, shortPuttRating: profile.shortPuttRating, mediumPuttRating: profile.mediumPuttRating, lagPuttRating: profile.lagPuttRating, greenReadingRating: profile.greenReadingRating, putterInfo: profile.putterInfo };
+    case 'mental game':
+      return { ...base, mentalStrengths: profile.mentalStrengths, mentalWeaknesses: profile.mentalWeaknesses, mentalGameNotes: profile.mentalGameNotes, preShotRoutine: profile.preShotRoutine, favoriteThoughts: profile.favoriteThoughts };
+    case 'course management':
+       return { ...base, mentalStrengths: profile.mentalStrengths, mentalWeaknesses: profile.mentalWeaknesses, goals: profile.goals }; // Example
+    case 'swing':
+        return { ...base, swingFocus: profile.swingFocus, driverMisses: profile.driverMisses, ironMisses: profile.ironMisses, favoriteThoughts: profile.favoriteThoughts };
+    default: // 'Overall' or unknown
+      return { ...profile.toJSON() }; // Send everything for overall, strip meta fields
+  }
+};
+
+// Helper function to format session context
+const formatSessionContext = (sessions) => {
+  if (!sessions || sessions.length === 0) return 'No recent sessions available.';
+  // Format the latest 1-3 sessions concisely
+  return sessions.slice(0, 3).map((s, i) =>
+    `Session ${i + 1} (${new Date(s.createdAt).toLocaleDateString()}):\n${s.content || 'No detailed notes.'}`
+  ).join('\n\n');
+};
+
+// Helper function to generate prompt instructions based on advice type
+const getAdviceInstructions = (adviceType) => {
+    switch (adviceType?.toLowerCase()) {
+        case 'practice drills':
+            return "Provide 2-3 specific, actionable practice drills related to the focus area. Explain the purpose of each drill and how to perform it. Suggest quantities or success metrics if applicable.";
+        case 'swing thoughts':
+            return "Suggest 2-3 simple, positive swing thoughts or feels relevant to the focus area and player's profile. Explain the intended effect of each thought.";
+        case 'practice plan':
+            return "Outline a structured practice plan (e.g., for a 60-minute session) targeting the focus area. Allocate time to different activities (warm-up, drills, feel practice, simulated play).";
+        case 'mental strategy':
+            return "Offer 2-3 practical mental game strategies or mindset adjustments for the focus area. This could include pre-shot routine elements, visualization, or ways to handle pressure/mistakes.";
+        case 'analyze performance':
+            return "Analyze the provided profile and session data. Identify 1-2 key strengths and 1-2 major areas for improvement related to the focus area. Suggest a priority for practice.";
+        case 'quick tip':
+             return "Provide one concise, actionable tip or reminder related to the focus area that the player can easily implement in their next round or practice session.";
+        default:
+            return "Provide general observations and actionable recommendations based on the player's profile and recent session notes for the specified focus area.";
+    }
+};
+
+
+// --- Main Controller Function ---
+exports.generateRecommendation = async (req, res) => {
+  try {
+    const { focusArea, adviceType } = req.body; // Get user request from POST body
+    const userId = req.user.userId;
+
+    if (!focusArea || !adviceType) {
+      return res.status(400).json({ message: 'Focus Area and Advice Type are required.' });
+    }
+
+    // 1. Fetch Profile
+    const profile = await Profile.findOne({ where: { userId: userId } });
     if (!profile) {
       return res.status(404).json({ message: 'Profile not found' });
     }
+    const relevantProfileData = getProfileContext(profile, focusArea);
 
-    // Get latest journal entry
-    const latestEntry = await JournalEntry.findOne({
-      where: { userId: req.user.userId },
-      order: [['createdAt', 'DESC']]
+    // 2. Fetch Recent Sessions (e.g., last 3)
+    // TODO: Implement more complex contextSources logic if needed
+    const recentSessions = await JournalEntry.findAll({
+      where: { userId: userId },
+      order: [['createdAt', 'DESC']],
+      limit: 3
     });
+    const formattedSessions = formatSessionContext(recentSessions);
 
-    // Get existing recommendation
-    const existingRecommendation = await AIRecommendation.findOne({
-      where: { userId: req.user.userId }
-    });
+    // 3. Construct the Dynamic Prompt
+    const adviceInstructions = getAdviceInstructions(adviceType);
+    const prompt = `
+You are an expert AI Golf Coach. Analyze the following player information with a focus on '${focusArea}' and provide advice in the style of '${adviceType}'.
 
-    // If there's an existing recommendation and no new request, return it
-    if (existingRecommendation && !req.query.refresh) {
-      return res.json({
-        recommendations: existingRecommendation.recommendations,
-        context: existingRecommendation.context
-      });
-    }
+Player Profile Context (${focusArea}):
+${JSON.stringify(relevantProfileData, null, 2)}
 
-    // Construct the prompt
-    const prompt = `As an AI golf coach, analyze the following information and provide specific recommendations:
+Recent Session Notes Summary:
+${formattedSessions}
 
-Player Profile:
-- Miss Description: ${profile.missDescription || 'Not provided'}
-- Pre-shot Routine: ${profile.preShotRoutine || 'Not provided'}
-- Favorite Thoughts: ${profile.favoriteThoughts || 'Not provided'}
-- Handicap: ${profile.handicap || 'Not provided'}
+Instructions:
+${adviceInstructions}
 
-Latest Session Notes:
-${latestEntry ? latestEntry.content : 'No recent sessions recorded'}
+Format the response clearly using sections, headings, bullet points, or numbered lists as appropriate. Be encouraging and actionable.
+    `;
 
-Please provide:
-1. Specific drills to work on at the range, focusing on addressing the player's miss pattern
-2. Key swing thoughts to keep in mind during practice
-3. Suggestions for improving their pre-shot routine
-4. Any additional observations or recommendations based on their latest session
-
-Format the response in a clear, structured way that's easy to read.`;
-
-    // Make OpenAI API call
+    // 4. Make OpenAI API Call
     const completion = await openai.chat.completions.create({
       messages: [{ role: "user", content: prompt }],
-      model: "gpt-4-turbo-preview",
+      model: "gpt-4-turbo-preview", // Or your preferred model
     });
 
-    const recommendations = completion.choices[0].message.content;
-    const context = {
-      profile: {
-        missDescription: profile.missDescription,
-        preShotRoutine: profile.preShotRoutine,
-        favoriteThoughts: profile.favoriteThoughts,
-        handicap: profile.handicap
-      },
-      latestSession: latestEntry ? {
-        content: latestEntry.content,
-        date: latestEntry.createdAt
-      } : null
-    };
+    const recommendationText = completion.choices[0].message.content;
 
-    // Save or update the recommendation
-    if (existingRecommendation) {
-      await existingRecommendation.update({
-        recommendations,
-        context
-      });
-    } else {
-      await AIRecommendation.create({
-        userId: req.user.userId,
-        recommendations,
-        context
-      });
-    }
-
-    res.json({
-      recommendations,
-      context
+    // 5. Save the New Recommendation to DB
+    const newRecommendation = await AIRecommendation.create({
+      userId: userId,
+      focusArea: focusArea,
+      adviceType: adviceType,
+      recommendations: recommendationText,
+      promptUsed: prompt, // Optional: save prompt for debugging
+      profileContext: relevantProfileData, // Optional: save context used
+      sessionContext: recentSessions.map(s => ({ id: s.id, date: s.createdAt, content: s.content })), // Optional: save context used
     });
+
+    // 6. Return the result
+    res.status(201).json(newRecommendation); // Return the full recommendation object
 
   } catch (error) {
-    console.error('Error getting AI recommendations:', error);
-    res.status(500).json({ message: 'Error getting recommendations' });
+    console.error('Error generating AI recommendation:', error);
+    // Check for specific OpenAI errors if needed
+    if (error.response) {
+        console.error(error.response.status, error.response.data);
+        return res.status(500).json({ message: 'Error communicating with AI service.' });
+    }
+    res.status(500).json({ message: 'Error generating recommendation' });
   }
+};
+
+// --- Optional History Endpoint ---
+exports.getRecommendationHistory = async (req, res) => {
+     try {
+        const history = await AIRecommendation.findAll({
+            where: { userId: req.user.userId },
+            order: [['createdAt', 'DESC']],
+            limit: 10 // Limit history length
+        });
+        res.json(history);
+     } catch (error) {
+        console.error('Error fetching recommendation history:', error);
+        res.status(500).json({ message: 'Error fetching history' });
+     }
+};
+
+// --- Latest Recommendation Endpoint ---
+exports.getLatestRecommendation = async (req, res) => {
+    try {
+        const latest = await AIRecommendation.findOne({
+            where: { userId: req.user.userId },
+            order: [['createdAt', 'DESC']]
+        });
+        
+        if (!latest) {
+            return res.status(404).json({ message: 'No recommendations found' });
+        }
+        
+        res.json(latest);
+    } catch (error) {
+        console.error('Error fetching latest recommendation:', error);
+        res.status(500).json({ message: 'Error fetching latest recommendation' });
+    }
 }; 

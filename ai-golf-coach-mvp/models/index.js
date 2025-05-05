@@ -1,12 +1,19 @@
 const sequelize = require('../config/database');
-const User = require('./user');
+const { DataTypes } = require('sequelize');
+
+// Import model functions
+const UserModel = require('./user');
 const ProfileModel = require('./profile');
-const JournalEntry = require('./journalEntry');
-const AIRecommendation = require('./aiRecommendation');
+const JournalEntryModel = require('./journalEntry');
+const AIRecommendationModel = require('./aiRecommendation');
 
-// Initialize the Profile model with sequelize
-const Profile = ProfileModel(sequelize, require('sequelize').DataTypes);
+// Initialize models with sequelize
+const User = UserModel(sequelize, DataTypes);
+const Profile = ProfileModel(sequelize, DataTypes);
+const JournalEntry = JournalEntryModel(sequelize, DataTypes);
+const AIRecommendation = AIRecommendationModel(sequelize, DataTypes);
 
+// Set up associations
 User.hasMany(JournalEntry, { foreignKey: 'userId' });
 User.hasOne(Profile, { foreignKey: 'userId', onDelete: 'CASCADE' });
 User.hasOne(AIRecommendation, { foreignKey: 'userId', onDelete: 'CASCADE' });
